@@ -1,0 +1,38 @@
+.track-card {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    background-color: #1a1a1a;
+    border-radius: 20px;
+    box-shadow: 8px 8px 16px #121212, -8px -8px 16px #242424;
+    padding: 16px;
+    margin: 16px;
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .track-card:hover {
+    box-shadow: 12px 12px 24px #121212, -12px -12px 24px #242424;
+  }
+  
+  .thumbnail {
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+    margin-right: 16px;
+  }
+  
+  .details {
+    color: #ffffff;
+  }
+  
+  .track-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin: 0;
+  }
+  
+  .artist-name {
+    font-size: 1rem;
+    margin: 0;
+  }
+  
