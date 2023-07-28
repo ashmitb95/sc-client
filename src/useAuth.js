@@ -12,7 +12,6 @@ export default function useAuth(code) {
         code,
       })
       .then((res) => {
-        debugger;
         setAccessToken(res.data.accessToken);
         setRefreshToken(res.data.refreshToken);
         setExpiresIn(res.data.expiresIn);

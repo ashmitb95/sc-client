@@ -1,12 +1,10 @@
 import React from "react";
 
-import "./TrackCard.css"; // Import the CSS file for styling
+// import "./TrackCard.css"; // Import the CSS file for styling
 export default function RecentTrack({ track, chooseTrack }) {
   function handlePlay() {
     chooseTrack(track);
   }
-
-  console.log("Track:", track);
 
   return (
     <div
@@ -19,8 +17,10 @@ export default function RecentTrack({ track, chooseTrack }) {
         style={{ height: "64px", width: "64px" }}
       />
       <div className="ml-3">
-        <div>{track.name}</div>
-        <div className="text-muted">{track.artists[0]?.name}</div>
+        <div style={{ color: "#373634" }}>{track.name}</div>
+        <div style={{ color: "#373634" }} className="text-muted">
+          {track.artists[0]?.name}
+        </div>
       </div>
     </div>
 

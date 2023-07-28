@@ -3,11 +3,12 @@ import useAuth from "./useAuth";
 import Player from "./Player";
 import { Row, Col, Card } from "antd";
 import TrackSearchResult from "./TrackSearchResult";
-import RecentTrack from "./RecentTrack";
+import RecentTrack from "./components/RecentTrack";
 import { Container, Form } from "react-bootstrap";
 import SpotifyWebApi from "spotify-web-api-node";
 import axios from "axios";
-import "./index.css";
+import TrackCollection from "./components/TrackCollection";
+// import "./index.css";
 
 const spotifyApi = new SpotifyWebApi({
   clientId: "128a94262ba742d2aba73d3a6c264a48",
@@ -23,6 +24,8 @@ export default function Dashboard({ code }) {
   const [recommendedTracks, setRecommendedTracks] = useState([]);
   const [trackIDs, setTrackIDs] = useState([]);
   const [images, setImages] = useState([]);
+  const [artistIDs, setArtistIDs] = useState([]);
+  const [artistTracks, setArtistTracks] = useState([]);
 
   function chooseTrack(track) {
     setPlayingTrack(track);
@@ -44,6 +47,32 @@ export default function Dashboard({ code }) {
         setLyrics(res.data.lyrics);
       });
   }, [playingTrack]);
+
+  useEffect(async () => {
+    const token = localStorage.getItem("authToken");
+    if (!token || !trackIDs.length) return;
+    const artistTracks = await Promise.all(
+      artistIDs.map(async (artistID) => {
+        const response = await axios.get(
+          "http://localhost:3001/tracks/artists",
+          {
+            params: {
+              artistID: artistID,
+              accessToken: token,
+            },
+          }
+        );
+        return response.data.tracks;
+      })
+    );
+    const reducedTracks = artistTracks.reduce((acc, tracks) => {
+      return [...acc, ...tracks];
+    }, []);
+
+    setArtistTracks(reducedTracks);
+
+    console.log("Artist Recommended Tracks are: ", reducedTracks);
+  }, [artistIDs]);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -107,10 +136,10 @@ export default function Dashboard({ code }) {
 
         setRecommendedTracks(res.data.tracks);
 
-        setImages((state) => [
-          ...state,
-          res?.data?.map((track) => track?.album.images?.[0]?.url),
-        ]);
+        // setImages((state) => [
+        //   ...state,
+        //   res?.data?.map((track) => track?.album.images?.[0]?.url),
+        // ]);
         // const trackIDs = res?.data?.tracks?.map((item) => item.id) || {};
         // setTrackIDs(trackIDs);
       });
@@ -130,11 +159,15 @@ export default function Dashboard({ code }) {
         },
       })
       .then((res) => {
+        debugger;
         console.log("recent tracks", res.data);
         setRecentTracks(res.data);
+        const artistIDs = res?.data
+          ?.slice(res.data.length / 2)
+          .map((item) => item?.artists?.[0]?.id);
         const trackIDs = res?.data?.map((item) => item.id) || {};
         setTrackIDs(trackIDs);
-
+        setArtistIDs(artistIDs);
         setImages((state) => [
           ...state,
           res?.data?.map((track) => track?.album.images?.[0]?.url),
@@ -146,22 +179,56 @@ export default function Dashboard({ code }) {
       });
   }, [accessToken]);
 
+  // useEffect(() => {
+  //   if (!accessToken) return;
+  //   const token = localStorage.getItem("authToken");
+  //   // spotifyApi.setAccessToken(accessToken);
+  //   console.log("calling recents api for artist");
+  //   const recentType = "artists";
+
+  //   axios
+  //     .get(`http://localhost:3001/recent/${recentType}`, {
+  //       params: {
+  //         accessToken: accessToken,
+  //       },
+  //     })
+  //     .then((res) => {
+  //       console.log("recent tracks", res.data);
+  //       debugger;
+  //       // setRecentArtists(res.data);
+  //       // const trackIDs = res?.data?.map((item) => item.id) || {};
+  //       // setTrackIDs(trackIDs);
+
+  //       // setImages((state) => [
+  //       //   ...state,
+  //       //   res?.data?.map((track) => track?.album.images?.[0]?.url),
+  //       // ]);
+  //     })
+  //     .catch((err) => {
+  //       debugger;
+  //       console.error(err);
+  //     });
+  // }, [accessToken]);
+
   return (
-    <Container className="d-flex flex-column py-2" style={{ height: "100vh" }}>
-      <Form.Control
+    <Container
+      className="d-flex flex-column"
+      style={{ height: "100vh", width: "100%", backgroundColor: "#705B61" }}
+    >
+      {/* <Form.Control
         type="search"
         placeholder="Search Songs/Artists"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-      />
-      <div className="flex-grow-1 my-2" style={{ overflowY: "auto" }}>
-        {searchResults.map((track) => (
+      /> */}
+      <div className="flex-grow-1 my-2" style={{ overflowY: "scroll" }}>
+        {/* {searchResults.map((track) => (
           <TrackSearchResult
             track={track}
             key={track.uri}
             chooseTrack={chooseTrack}
           />
-        ))}
+        ))} */}
         {/* {searchResults.length === 0 && (
           <div className="text-center" style={{ whiteSpace: "pre" }}>
             {lyrics}
@@ -169,50 +236,30 @@ export default function Dashboard({ code }) {
         )} */}
         <Row gutter={[12, 12]}>
           <Col span={12}>
-            <Card style={{ height: "300px", overflow: "scroll" }}>
-              {recentTracks?.map((track) => (
-                <RecentTrack
-                  track={track}
-                  key={track.uri}
-                  chooseTrack={chooseTrack}
-                />
-              ))}
-            </Card>
+            <TrackCollection
+              title={"Some of your most recent songs"}
+              tracksToShow={recentTracks}
+              chooseTrack={chooseTrack}
+            />
           </Col>
           <Col span={12}>
-            <Card style={{ height: "300px", overflow: "scroll" }}>
-              {recommendedTracks?.map((track) => (
-                <RecentTrack
-                  track={track}
-                  key={track.uri}
-                  chooseTrack={chooseTrack}
-                />
-              ))}
-            </Card>
+            <TrackCollection
+              title="Some recommendations based on your recent songs"
+              tracksToShow={recommendedTracks}
+              chooseTrack={chooseTrack}
+            />
+          </Col>
+          <Col span={12}>
+            <TrackCollection
+              title="Binge on some of your favorite Artists"
+              tracksToShow={artistTracks}
+              chooseTrack={chooseTrack}
+            />
           </Col>
         </Row>
       </div>
       <div>
         <Player accessToken={accessToken} trackUri={playingTrack?.uri} />
-      </div>
-      <div className="background">
-        <div className="background-container">
-          <Row>
-            {images.map((item) => {
-              debugger;
-              return (
-                <Col>
-                  <Card style={{ height: "155px", width: "155px" }}>
-                    <img
-                      src={item}
-                      style={{ height: "155px", width: "155px" }}
-                    />
-                  </Card>
-                </Col>
-              );
-            })}
-          </Row>
-        </div>
       </div>
     </Container>
   );
