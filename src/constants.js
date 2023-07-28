@@ -8,6 +8,7 @@ const PERMISSION_SCOPES = [
   "user-read-playback-state",
   "user-modify-playback-state",
   "user-read-recently-played",
+  "playlist-read-private",
   //   "user-read-playback-state",
   //   "user-modify-playback-state",
   //   "user-read-currently-playing

@@ -26,6 +26,10 @@ export default function Dashboard({ code }) {
   const [images, setImages] = useState([]);
   const [artistIDs, setArtistIDs] = useState([]);
   const [artistTracks, setArtistTracks] = useState([]);
+  const [allArtistsFetched, setAllArtistsFetched] = useState(false);
+  const [forgottenPlaylists, setForgottenPlaylists] = useState([]);
+
+  console.log("Forgotten platlists: ", forgottenPlaylists);
 
   function chooseTrack(track) {
     setPlayingTrack(track);
@@ -65,6 +69,8 @@ export default function Dashboard({ code }) {
         return response.data.tracks;
       })
     );
+
+    setAllArtistsFetched(true);
     const reducedTracks = artistTracks.reduce((acc, tracks) => {
       return [...acc, ...tracks];
     }, []);
@@ -159,7 +165,6 @@ export default function Dashboard({ code }) {
         },
       })
       .then((res) => {
-        debugger;
         console.log("recent tracks", res.data);
         setRecentTracks(res.data);
         const artistIDs = res?.data
@@ -178,6 +183,39 @@ export default function Dashboard({ code }) {
         console.error(err);
       });
   }, [accessToken]);
+
+  useEffect(() => {
+    if (!accessToken || !allArtistsFetched) return;
+
+    setAllArtistsFetched(false);
+    // const token = localStorage.getItem("authToken");
+    // spotifyApi.setAccessToken(accessToken);
+    console.log("Getting Old Playlists");
+    const recentType = "tracks";
+
+    axios
+      .get(`http://localhost:3001/forgotten-playlists`, {
+        params: {
+          accessToken: accessToken,
+        },
+      })
+      .then((res) => {
+        const sortedPlaylists = res.data.sort((a, b) => a.name - b.name);
+        setForgottenPlaylists(sortedPlaylists);
+        // console.log("recent tracks", res.data);
+        // setRecentTracks(res.data);
+        // const artistIDs = res?.data
+        //   ?.slice(res.data.length / 2)
+        //   .map((item) => item?.artists?.[0]?.id);
+        // const trackIDs = res?.data?.map((item) => item.id) || {};
+        // setTrackIDs(trackIDs);
+        // setArtistIDs(artistIDs);
+        // setImages((state) => [
+        //   ...state,
+        //   res?.data?.map((track) => track?.album.images?.[0]?.url),
+        // ]);
+      });
+  }, [accessToken, allArtistsFetched]);
 
   // useEffect(() => {
   //   if (!accessToken) return;
@@ -256,6 +294,21 @@ export default function Dashboard({ code }) {
               chooseTrack={chooseTrack}
             />
           </Col>
+          {forgottenPlaylists.length ? (
+            forgottenPlaylists.map((playlist) => {
+              return (
+                <Col span={12}>
+                  <TrackCollection
+                    title={playlist.name}
+                    tracksToShow={playlist.tracks}
+                    chooseTrack={chooseTrack}
+                  />
+                </Col>
+              );
+            })
+          ) : (
+            <></>
+          )}
         </Row>
       </div>
       <div>
