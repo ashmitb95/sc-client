@@ -1,6 +1,6 @@
 import React from "react";
 import { Container } from "react-bootstrap";
-import { AUTH_URL } from "./constants";
+import { AUTH_URL } from "../helpers/constants";
 
 export default function Login() {
   return (

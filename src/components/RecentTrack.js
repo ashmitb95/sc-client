@@ -9,7 +9,7 @@ export default function RecentTrack({ track, chooseTrack }) {
   return (
     <div
       className="d-flex m-2 align-items-center"
-      style={{ cursor: "pointer" }}
+      style={{ cursor: "pointer", backgroundColor: "#1A1E1F" }}
       onClick={handlePlay}
     >
       <img
@@ -17,8 +17,8 @@ export default function RecentTrack({ track, chooseTrack }) {
         style={{ height: "64px", width: "64px" }}
       />
       <div className="ml-3">
-        <div style={{ color: "#373634" }}>{track.name}</div>
-        <div style={{ color: "#373634" }} className="text-muted">
+        <div style={{ color: "#FFF" }}>{track.name}</div>
+        <div style={{ color: "#FFF", opacity: 0.5 }}>
           {track.artists[0]?.name}
         </div>
       </div>

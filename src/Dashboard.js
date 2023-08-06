@@ -1,14 +1,19 @@
 import { useState, useEffect } from "react";
 import useAuth from "./useAuth";
-import Player from "./Player";
-import { Row, Col, Card } from "antd";
-import TrackSearchResult from "./TrackSearchResult";
+import Player from "./components/Player";
+import { Row, Col, Card, Tabs } from "antd";
+import TrackSearchResult from "./components/TrackSearchResult";
 import RecentTrack from "./components/RecentTrack";
 import { Container, Form } from "react-bootstrap";
 import SpotifyWebApi from "spotify-web-api-node";
 import axios from "axios";
 import TrackCollection from "./components/TrackCollection";
+import BaseLayout from "./components/Layout";
 // import "./index.css";
+
+import React from "react";
+import { Breadcrumb, Layout, Menu, theme } from "antd";
+const { Header, Content, Footer } = Layout;
 
 const spotifyApi = new SpotifyWebApi({
   clientId: "128a94262ba742d2aba73d3a6c264a48",
@@ -24,11 +29,14 @@ export default function Dashboard({ code }) {
   const [recommendedTracks, setRecommendedTracks] = useState([]);
   const [trackIDs, setTrackIDs] = useState([]);
   const [images, setImages] = useState([]);
-  const [artistIDs, setArtistIDs] = useState([]);
+  const [artistInfo, setArtistInfo] = useState([]);
   const [artistTracks, setArtistTracks] = useState([]);
   const [allArtistsFetched, setAllArtistsFetched] = useState(false);
   const [forgottenPlaylists, setForgottenPlaylists] = useState([]);
 
+  const {
+    token: { colorBgContainer },
+  } = theme.useToken();
   console.log("Forgotten platlists: ", forgottenPlaylists);
 
   function chooseTrack(track) {
@@ -55,30 +63,31 @@ export default function Dashboard({ code }) {
   useEffect(async () => {
     const token = localStorage.getItem("authToken");
     if (!token || !trackIDs.length) return;
-    const artistTracks = await Promise.all(
-      artistIDs.map(async (artistID) => {
+    const tracksByArtists = await Promise.all(
+      artistInfo.map(async (currentArtist) => {
         const response = await axios.get(
           "http://localhost:3001/tracks/artists",
           {
             params: {
-              artistID: artistID,
+              artistID: currentArtist.id,
               accessToken: token,
             },
           }
         );
-        return response.data.tracks;
+        return { artist: currentArtist, tracks: response.data.tracks };
       })
     );
 
     setAllArtistsFetched(true);
-    const reducedTracks = artistTracks.reduce((acc, tracks) => {
-      return [...acc, ...tracks];
-    }, []);
+    debugger;
+    // const reducedTracks = artistTracks.reduce((acc, tracks) => {
+    //   return [...acc, ...tracks];
+    // }, []);
 
-    setArtistTracks(reducedTracks);
+    setArtistTracks(tracksByArtists);
 
-    console.log("Artist Recommended Tracks are: ", reducedTracks);
-  }, [artistIDs]);
+    // console.log("Artist Recommended Tracks are: ", reducedTracks);
+  }, [artistInfo]);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -167,12 +176,12 @@ export default function Dashboard({ code }) {
       .then((res) => {
         console.log("recent tracks", res.data);
         setRecentTracks(res.data);
-        const artistIDs = res?.data
+        const artistInfo = res?.data
           ?.slice(res.data.length / 2)
-          .map((item) => item?.artists?.[0]?.id);
+          .map((item) => item?.artists?.[0]);
         const trackIDs = res?.data?.map((item) => item.id) || {};
         setTrackIDs(trackIDs);
-        setArtistIDs(artistIDs);
+        setArtistInfo(artistInfo);
         setImages((state) => [
           ...state,
           res?.data?.map((track) => track?.album.images?.[0]?.url),
@@ -204,12 +213,12 @@ export default function Dashboard({ code }) {
         setForgottenPlaylists(sortedPlaylists);
         // console.log("recent tracks", res.data);
         // setRecentTracks(res.data);
-        // const artistIDs = res?.data
+        // const artistInfo = res?.data
         //   ?.slice(res.data.length / 2)
         //   .map((item) => item?.artists?.[0]?.id);
         // const trackIDs = res?.data?.map((item) => item.id) || {};
         // setTrackIDs(trackIDs);
-        // setArtistIDs(artistIDs);
+        // setArtistInfo(artistInfo);
         // setImages((state) => [
         //   ...state,
         //   res?.data?.map((track) => track?.album.images?.[0]?.url),
@@ -248,56 +257,61 @@ export default function Dashboard({ code }) {
   //     });
   // }, [accessToken]);
 
-  return (
-    <Container
-      className="d-flex flex-column"
-      style={{ height: "100vh", width: "100%", backgroundColor: "#705B61" }}
-    >
-      {/* <Form.Control
-        type="search"
-        placeholder="Search Songs/Artists"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      /> */}
-      <div className="flex-grow-1 my-2" style={{ overflowY: "scroll" }}>
-        {/* {searchResults.map((track) => (
-          <TrackSearchResult
-            track={track}
-            key={track.uri}
-            chooseTrack={chooseTrack}
-          />
-        ))} */}
-        {/* {searchResults.length === 0 && (
-          <div className="text-center" style={{ whiteSpace: "pre" }}>
-            {lyrics}
-          </div>
-        )} */}
-        <Row gutter={[12, 12]}>
-          <Col span={12}>
-            <TrackCollection
-              title={"Some of your most recent songs"}
-              tracksToShow={recentTracks}
-              chooseTrack={chooseTrack}
-            />
-          </Col>
-          <Col span={12}>
-            <TrackCollection
-              title="Some recommendations based on your recent songs"
-              tracksToShow={recommendedTracks}
-              chooseTrack={chooseTrack}
-            />
-          </Col>
-          <Col span={12}>
-            <TrackCollection
-              title="Binge on some of your favorite Artists"
-              tracksToShow={artistTracks}
-              chooseTrack={chooseTrack}
-            />
-          </Col>
-          {forgottenPlaylists.length ? (
-            forgottenPlaylists.map((playlist) => {
+  const items = [
+    {
+      key: "1",
+      label: `Recommendations`,
+      children: (
+        <>
+          <Row gutter={[40, 0]} justify={"center"}>
+            <Col span={8} style={{ margin: "auto 80px" }}>
+              <TrackCollection
+                title={"Some of your most recent songs"}
+                tracksToShow={recentTracks}
+                chooseTrack={chooseTrack}
+              />
+            </Col>
+            <Col span={8} style={{ margin: "auto 80px" }}>
+              <TrackCollection
+                title="Some recommendations based on your recent songs"
+                tracksToShow={recommendedTracks}
+                chooseTrack={chooseTrack}
+              />
+            </Col>
+          </Row>
+        </>
+      ),
+    },
+    {
+      key: "2",
+      label: `Artists`,
+      children: (
+        <>
+          <Row gutter={[30, 30]} justify={"center"}>
+            {artistTracks.map((artist) => {
               return (
-                <Col span={12}>
+                <Col span={6}>
+                  <TrackCollection
+                    title={artist.artist.name}
+                    tracksToShow={artist.tracks}
+                    chooseTrack={chooseTrack}
+                  />
+                </Col>
+              );
+            })}
+          </Row>
+        </>
+      ),
+    },
+    {
+      key: "3",
+      label: `Tunes from the past`,
+      children: (
+        <>
+          <Row gutter={[12, 12]} justify={"center"}>
+            {forgottenPlaylists.map((playlist) => {
+              return (
+                <Col span={6}>
                   <TrackCollection
                     title={playlist.name}
                     tracksToShow={playlist.tracks}
@@ -305,15 +319,126 @@ export default function Dashboard({ code }) {
                   />
                 </Col>
               );
-            })
-          ) : (
-            <></>
-          )}
-        </Row>
-      </div>
-      <div>
-        <Player accessToken={accessToken} trackUri={playingTrack?.uri} />
-      </div>
-    </Container>
+            })}
+          </Row>
+        </>
+      ),
+    },
+  ];
+
+  const onChange = (key) => {
+    console.log(key);
+  };
+
+  return (
+    <Layout>
+      <Header
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 1,
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
+        <div className="demo-logo" />
+        <Menu
+          theme="dark"
+          mode="horizontal"
+          defaultSelectedKeys={["2"]}
+          items={new Array(3).fill(null).map((_, index) => ({
+            key: String(index + 1),
+            label: `nav ${index + 1}`,
+          }))}
+        />
+      </Header>
+      <Content
+        className="site-layout"
+        style={{
+          padding: "0 50px",
+        }}
+      >
+        {/* <Breadcrumb
+          style={{
+            margin: "16px 0",
+          }}
+        >
+          <Breadcrumb.Item>Home</Breadcrumb.Item>
+          <Breadcrumb.Item>List</Breadcrumb.Item>
+          <Breadcrumb.Item>App</Breadcrumb.Item>
+        </Breadcrumb> */}
+        <div
+          style={{
+            padding: 24,
+            minHeight: 380,
+            background: colorBgContainer,
+          }}
+        >
+          {/* <Container
+            className="d-flex flex-column"
+            style={{
+              height: "100vh",
+              width: "100%",
+              backgroundColor: "#1D2123",
+            }}
+          > */}
+          {/* <Form.Control
+        type="search"
+        placeholder="Search Songs/Artists"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      /> */}
+          <div className="flex-grow-1 my-2" style={{ overflowY: "scroll" }}>
+            {/* {searchResults.map((track) => (
+          <TrackSearchResult
+            track={track}
+            key={track.uri}
+            chooseTrack={chooseTrack}
+          />
+        ))} */}
+            {/* {searchResults.length === 0 && (
+          <div className="text-center" style={{ whiteSpace: "pre" }}>
+            {lyrics}
+          </div>
+        )} */}
+            {/* <Row gutter={[12, 12]}> */}
+            {/* {forgottenPlaylists.length ? (
+                forgottenPlaylists.map((playlist) => {
+                  return (
+                    <Col span={6}>
+                      <TrackCollection
+                        title={playlist.name}
+                        tracksToShow={playlist.tracks}
+                        chooseTrack={chooseTrack}
+                      />
+                    </Col>
+                  );
+                })
+              ) : (
+                <></>
+              )} */}
+            <Tabs
+              className="music-tabs"
+              defaultActiveKey="1"
+              items={items}
+              onChange={onChange}
+            />
+            {/* </Row> */}
+          </div>
+          <div>
+            <Player accessToken={accessToken} trackUri={playingTrack?.uri} />
+          </div>
+          {/* </Container> */}
+        </div>
+      </Content>
+      <Footer
+        style={{
+          textAlign: "center",
+        }}
+      >
+        Ant Design ©2023 Created by Ant UED
+      </Footer>
+    </Layout>
   );
 }
