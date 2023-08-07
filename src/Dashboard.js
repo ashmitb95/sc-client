@@ -1,14 +1,44 @@
 import { useState, useEffect } from "react";
 import useAuth from "./useAuth";
-import Player from "./Player";
-import { Row, Col, Card } from "antd";
-import TrackSearchResult from "./TrackSearchResult";
+import Player from "./components/Player";
+import {
+  Row,
+  Col,
+  Card,
+  Tabs,
+  Tooltip,
+  Carousel,
+  Typography,
+  Button,
+} from "antd";
+import TrackSearchResult from "./components/TrackSearchResult";
 import RecentTrack from "./components/RecentTrack";
 import { Container, Form } from "react-bootstrap";
 import SpotifyWebApi from "spotify-web-api-node";
 import axios from "axios";
 import TrackCollection from "./components/TrackCollection";
+import BaseLayout from "./components/Layout";
+import StickyBox from "react-sticky-box";
+import { ScrollMenu, VisibilityContext } from "react-horizontal-scrolling-menu";
+import Scroller from "./components/scrolltest";
+import "./index.css";
+import HorizontalScroll from "react-horizontal-scrolling";
+
+import { ArrowsAltOutlined, SearchOutlined } from "@ant-design/icons";
+
+import {
+  ArrowRightOutlined,
+  ArrowLeftOutlined,
+  RightOutlined,
+  LeftOutlined,
+} from "@ant-design/icons";
 // import "./index.css";
+
+import React from "react";
+import { Breadcrumb, Layout, Menu, theme } from "antd";
+import TabbedItems from "./components/TabbedItems";
+import TabContent from "./components/TabContent";
+const { Header, Content, Footer } = Layout;
 
 const spotifyApi = new SpotifyWebApi({
   clientId: "128a94262ba742d2aba73d3a6c264a48",
@@ -24,12 +54,18 @@ export default function Dashboard({ code }) {
   const [recommendedTracks, setRecommendedTracks] = useState([]);
   const [trackIDs, setTrackIDs] = useState([]);
   const [images, setImages] = useState([]);
-  const [artistIDs, setArtistIDs] = useState([]);
+  const [artistInfo, setArtistInfo] = useState([]);
   const [artistTracks, setArtistTracks] = useState([]);
   const [allArtistsFetched, setAllArtistsFetched] = useState(false);
   const [forgottenPlaylists, setForgottenPlaylists] = useState([]);
+  const [activeKey, setActiveKey] = useState("1");
 
-  console.log("Forgotten platlists: ", forgottenPlaylists);
+  const onChange = (key) => {
+    console.log(key);
+  };
+  const {
+    token: { colorBgContainer },
+  } = theme.useToken();
 
   function chooseTrack(track) {
     setPlayingTrack(track);
@@ -55,30 +91,30 @@ export default function Dashboard({ code }) {
   useEffect(async () => {
     const token = localStorage.getItem("authToken");
     if (!token || !trackIDs.length) return;
-    const artistTracks = await Promise.all(
-      artistIDs.map(async (artistID) => {
+    const tracksByArtists = await Promise.all(
+      artistInfo.map(async (currentArtist) => {
         const response = await axios.get(
           "http://localhost:3001/tracks/artists",
           {
             params: {
-              artistID: artistID,
+              artistID: currentArtist.id,
               accessToken: token,
             },
           }
         );
-        return response.data.tracks;
+        return { artist: currentArtist, tracks: response.data.tracks };
       })
     );
 
     setAllArtistsFetched(true);
-    const reducedTracks = artistTracks.reduce((acc, tracks) => {
-      return [...acc, ...tracks];
-    }, []);
+    // const reducedTracks = artistTracks.reduce((acc, tracks) => {
+    //   return [...acc, ...tracks];
+    // }, []);
 
-    setArtistTracks(reducedTracks);
+    setArtistTracks(tracksByArtists);
 
-    console.log("Artist Recommended Tracks are: ", reducedTracks);
-  }, [artistIDs]);
+    // console.log("Artist Recommended Tracks are: ", reducedTracks);
+  }, [artistInfo]);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -138,16 +174,7 @@ export default function Dashboard({ code }) {
         }
       )
       .then((res) => {
-        // debugger;
-
         setRecommendedTracks(res.data.tracks);
-
-        // setImages((state) => [
-        //   ...state,
-        //   res?.data?.map((track) => track?.album.images?.[0]?.url),
-        // ]);
-        // const trackIDs = res?.data?.tracks?.map((item) => item.id) || {};
-        // setTrackIDs(trackIDs);
       });
   }, [trackIDs]);
 
@@ -167,12 +194,12 @@ export default function Dashboard({ code }) {
       .then((res) => {
         console.log("recent tracks", res.data);
         setRecentTracks(res.data);
-        const artistIDs = res?.data
+        const artistInfo = res?.data
           ?.slice(res.data.length / 2)
-          .map((item) => item?.artists?.[0]?.id);
+          .map((item) => item?.artists?.[0]);
         const trackIDs = res?.data?.map((item) => item.id) || {};
         setTrackIDs(trackIDs);
-        setArtistIDs(artistIDs);
+        setArtistInfo(artistInfo);
         setImages((state) => [
           ...state,
           res?.data?.map((track) => track?.album.images?.[0]?.url),
@@ -188,8 +215,6 @@ export default function Dashboard({ code }) {
     if (!accessToken || !allArtistsFetched) return;
 
     setAllArtistsFetched(false);
-    // const token = localStorage.getItem("authToken");
-    // spotifyApi.setAccessToken(accessToken);
     console.log("Getting Old Playlists");
     const recentType = "tracks";
 
@@ -202,118 +227,170 @@ export default function Dashboard({ code }) {
       .then((res) => {
         const sortedPlaylists = res.data.sort((a, b) => a.name - b.name);
         setForgottenPlaylists(sortedPlaylists);
-        // console.log("recent tracks", res.data);
-        // setRecentTracks(res.data);
-        // const artistIDs = res?.data
-        //   ?.slice(res.data.length / 2)
-        //   .map((item) => item?.artists?.[0]?.id);
-        // const trackIDs = res?.data?.map((item) => item.id) || {};
-        // setTrackIDs(trackIDs);
-        // setArtistIDs(artistIDs);
-        // setImages((state) => [
-        //   ...state,
-        //   res?.data?.map((track) => track?.album.images?.[0]?.url),
-        // ]);
       });
   }, [accessToken, allArtistsFetched]);
 
-  // useEffect(() => {
-  //   if (!accessToken) return;
-  //   const token = localStorage.getItem("authToken");
-  //   // spotifyApi.setAccessToken(accessToken);
-  //   console.log("calling recents api for artist");
-  //   const recentType = "artists";
-
-  //   axios
-  //     .get(`http://localhost:3001/recent/${recentType}`, {
-  //       params: {
-  //         accessToken: accessToken,
-  //       },
-  //     })
-  //     .then((res) => {
-  //       console.log("recent tracks", res.data);
-  //       debugger;
-  //       // setRecentArtists(res.data);
-  //       // const trackIDs = res?.data?.map((item) => item.id) || {};
-  //       // setTrackIDs(trackIDs);
-
-  //       // setImages((state) => [
-  //       //   ...state,
-  //       //   res?.data?.map((track) => track?.album.images?.[0]?.url),
-  //       // ]);
-  //     })
-  //     .catch((err) => {
-  //       debugger;
-  //       console.error(err);
-  //     });
-  // }, [accessToken]);
+  const items = [
+    {
+      key: "1",
+      children: (
+        <TabContent
+          chooseTrack={chooseTrack}
+          title="Welcome to mixtape central!"
+          contentList={[
+            {
+              label: "Recent Tracks",
+              tracks: recentTracks,
+            },
+            {
+              label: "Some recommendations based on your recent songs",
+              tracks: recommendedTracks,
+            },
+          ]}
+        />
+      ),
+    },
+    {
+      key: "2",
+      label: `Artists`,
+      forceRender: true,
+      children: (
+        <>
+          <TabContent
+            chooseTrack={chooseTrack}
+            title="Binge on some of your favorite artists"
+            contentList={artistTracks.map((artist) => {
+              return {
+                label: artist.artist.name,
+                tracks: artist.tracks,
+              };
+            })}
+          />
+        </>
+      ),
+    },
+    {
+      key: "3",
+      label: `Tunes from the past`,
+      forceRender: true,
+      children: (
+        <>
+          <TabContent
+            chooseTrack={chooseTrack}
+            title="Some music you have moved away from"
+            contentList={forgottenPlaylists.map((playlist) => {
+              return {
+                label: playlist.name,
+                tracks: playlist.tracks,
+              };
+            })}
+          />
+        </>
+      ),
+    },
+  ];
 
   return (
-    <Container
-      className="d-flex flex-column"
-      style={{ height: "100vh", width: "100%", backgroundColor: "#705B61" }}
-    >
-      {/* <Form.Control
+    <Layout>
+      <Header
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 1,
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
+        <div className="demo-logo" />
+        <Menu
+          theme="dark"
+          mode="horizontal"
+          defaultSelectedKeys={["2"]}
+          items={new Array(3).fill(null).map((_, index) => ({
+            key: String(index + 1),
+            label: `nav ${index + 1}`,
+          }))}
+        />
+      </Header>
+      <Content
+        className="site-layout"
+        style={{
+          padding: "0 50px",
+          height: "100vh",
+        }}
+      >
+        <div
+          style={{
+            padding: 24,
+            minHeight: 380,
+            background: colorBgContainer,
+          }}
+        >
+          {/* <Container
+            className="d-flex flex-column"
+            style={{
+              height: "100vh",
+              width: "100%",
+              backgroundColor: "#1D2123",
+            }}
+          > */}
+          {/* <Form.Control
         type="search"
         placeholder="Search Songs/Artists"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       /> */}
-      <div className="flex-grow-1 my-2" style={{ overflowY: "scroll" }}>
-        {/* {searchResults.map((track) => (
+          <div className="flex-grow-1 my-2" style={{ overflowY: "scroll" }}>
+            {/* {searchResults.map((track) => (
           <TrackSearchResult
             track={track}
             key={track.uri}
             chooseTrack={chooseTrack}
-          />
-        ))} */}
-        {/* {searchResults.length === 0 && (
-          <div className="text-center" style={{ whiteSpace: "pre" }}>
-            {lyrics}
+            
+          />)}*/}
+
+            <Row>
+              <Button
+                type="secondary"
+                // style={{ fontSize: 40 }}
+                onClick={() => {
+                  setActiveKey((state) => {
+                    const currentKey = parseInt(state);
+                    if (currentKey > 1) return (currentKey - 1).toString();
+                  });
+                }}
+                shape="circle"
+                icon={<ArrowLeftOutlined />}
+              />
+              <Button
+                type="secondary"
+                // style={{ fontSize: 40 }}
+                onClick={() => {
+                  setActiveKey((state) => {
+                    const currentKey = parseInt(state);
+                    if (currentKey < 3) return (currentKey + 1).toString();
+                  });
+                }}
+                shape="circle"
+                icon={<ArrowRightOutlined />}
+              />
+            </Row>
+            <TabbedItems items={items} activeKey={activeKey} />
           </div>
-        )} */}
-        <Row gutter={[12, 12]}>
-          <Col span={12}>
-            <TrackCollection
-              title={"Some of your most recent songs"}
-              tracksToShow={recentTracks}
-              chooseTrack={chooseTrack}
-            />
-          </Col>
-          <Col span={12}>
-            <TrackCollection
-              title="Some recommendations based on your recent songs"
-              tracksToShow={recommendedTracks}
-              chooseTrack={chooseTrack}
-            />
-          </Col>
-          <Col span={12}>
-            <TrackCollection
-              title="Binge on some of your favorite Artists"
-              tracksToShow={artistTracks}
-              chooseTrack={chooseTrack}
-            />
-          </Col>
-          {forgottenPlaylists.length ? (
-            forgottenPlaylists.map((playlist) => {
-              return (
-                <Col span={12}>
-                  <TrackCollection
-                    title={playlist.name}
-                    tracksToShow={playlist.tracks}
-                    chooseTrack={chooseTrack}
-                  />
-                </Col>
-              );
-            })
-          ) : (
-            <></>
-          )}
-        </Row>
-      </div>
-      <div>
-        <Player accessToken={accessToken} trackUri={playingTrack?.uri} />
-      </div>
-    </Container>
+          {/* <div>
+            <Player accessToken={accessToken} trackUri={playingTrack?.uri} />
+          </div> */}
+          {/* </Container> */}
+        </div>
+      </Content>
+      <Footer
+        style={{
+          textAlign: "center",
+        }}
+      >
+        Ant Design ©2023 Created by Ant UED
+      </Footer>
+    </Layout>
   );
 }
