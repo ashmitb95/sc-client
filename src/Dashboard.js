@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import useAuth from "./useAuth";
 import Player from "./components/Player";
-import { Row, Col, Card, Tabs } from "antd";
+import { Row, Col, Card, Tabs, Carousel } from "antd";
 import TrackSearchResult from "./components/TrackSearchResult";
 import RecentTrack from "./components/RecentTrack";
 import { Container, Form } from "react-bootstrap";
@@ -9,6 +9,18 @@ import SpotifyWebApi from "spotify-web-api-node";
 import axios from "axios";
 import TrackCollection from "./components/TrackCollection";
 import BaseLayout from "./components/Layout";
+import StickyBox from "react-sticky-box";
+import { ScrollMenu, VisibilityContext } from "react-horizontal-scrolling-menu";
+import Scroller from "./components/scrolltest";
+
+import HorizontalScroll from "react-horizontal-scrolling";
+
+import {
+  ArrowRightOutlined,
+  ArrowLeftOutlined,
+  RightOutlined,
+  LeftOutlined,
+} from "@ant-design/icons";
 // import "./index.css";
 
 import React from "react";
@@ -33,11 +45,14 @@ export default function Dashboard({ code }) {
   const [artistTracks, setArtistTracks] = useState([]);
   const [allArtistsFetched, setAllArtistsFetched] = useState(false);
   const [forgottenPlaylists, setForgottenPlaylists] = useState([]);
+  const [activeKey, setActiveKey] = useState("1");
 
+  const onChange = (key) => {
+    console.log(key);
+  };
   const {
     token: { colorBgContainer },
   } = theme.useToken();
-  console.log("Forgotten platlists: ", forgottenPlaylists);
 
   function chooseTrack(track) {
     setPlayingTrack(track);
@@ -79,7 +94,6 @@ export default function Dashboard({ code }) {
     );
 
     setAllArtistsFetched(true);
-    debugger;
     // const reducedTracks = artistTracks.reduce((acc, tracks) => {
     //   return [...acc, ...tracks];
     // }, []);
@@ -147,16 +161,7 @@ export default function Dashboard({ code }) {
         }
       )
       .then((res) => {
-        // debugger;
-
         setRecommendedTracks(res.data.tracks);
-
-        // setImages((state) => [
-        //   ...state,
-        //   res?.data?.map((track) => track?.album.images?.[0]?.url),
-        // ]);
-        // const trackIDs = res?.data?.tracks?.map((item) => item.id) || {};
-        // setTrackIDs(trackIDs);
       });
   }, [trackIDs]);
 
@@ -197,8 +202,6 @@ export default function Dashboard({ code }) {
     if (!accessToken || !allArtistsFetched) return;
 
     setAllArtistsFetched(false);
-    // const token = localStorage.getItem("authToken");
-    // spotifyApi.setAccessToken(accessToken);
     console.log("Getting Old Playlists");
     const recentType = "tracks";
 
@@ -211,51 +214,8 @@ export default function Dashboard({ code }) {
       .then((res) => {
         const sortedPlaylists = res.data.sort((a, b) => a.name - b.name);
         setForgottenPlaylists(sortedPlaylists);
-        // console.log("recent tracks", res.data);
-        // setRecentTracks(res.data);
-        // const artistInfo = res?.data
-        //   ?.slice(res.data.length / 2)
-        //   .map((item) => item?.artists?.[0]?.id);
-        // const trackIDs = res?.data?.map((item) => item.id) || {};
-        // setTrackIDs(trackIDs);
-        // setArtistInfo(artistInfo);
-        // setImages((state) => [
-        //   ...state,
-        //   res?.data?.map((track) => track?.album.images?.[0]?.url),
-        // ]);
       });
   }, [accessToken, allArtistsFetched]);
-
-  // useEffect(() => {
-  //   if (!accessToken) return;
-  //   const token = localStorage.getItem("authToken");
-  //   // spotifyApi.setAccessToken(accessToken);
-  //   console.log("calling recents api for artist");
-  //   const recentType = "artists";
-
-  //   axios
-  //     .get(`http://localhost:3001/recent/${recentType}`, {
-  //       params: {
-  //         accessToken: accessToken,
-  //       },
-  //     })
-  //     .then((res) => {
-  //       console.log("recent tracks", res.data);
-  //       debugger;
-  //       // setRecentArtists(res.data);
-  //       // const trackIDs = res?.data?.map((item) => item.id) || {};
-  //       // setTrackIDs(trackIDs);
-
-  //       // setImages((state) => [
-  //       //   ...state,
-  //       //   res?.data?.map((track) => track?.album.images?.[0]?.url),
-  //       // ]);
-  //     })
-  //     .catch((err) => {
-  //       debugger;
-  //       console.error(err);
-  //     });
-  // }, [accessToken]);
 
   const items = [
     {
@@ -285,50 +245,48 @@ export default function Dashboard({ code }) {
     {
       key: "2",
       label: `Artists`,
+      forceRender: true,
       children: (
         <>
-          <Row gutter={[30, 30]} justify={"center"}>
+          <div className="scrolling-wrapper">
             {artistTracks.map((artist) => {
               return (
-                <Col span={6}>
+                <div className="card">
                   <TrackCollection
                     title={artist.artist.name}
                     tracksToShow={artist.tracks}
                     chooseTrack={chooseTrack}
                   />
-                </Col>
+                </div>
               );
             })}
-          </Row>
+          </div>
         </>
       ),
     },
     {
       key: "3",
       label: `Tunes from the past`,
+      forceRender: true,
       children: (
         <>
-          <Row gutter={[12, 12]} justify={"center"}>
+          <div className="scrolling-wrapper">
             {forgottenPlaylists.map((playlist) => {
               return (
-                <Col span={6}>
+                <div className="card">
                   <TrackCollection
                     title={playlist.name}
                     tracksToShow={playlist.tracks}
                     chooseTrack={chooseTrack}
                   />
-                </Col>
+                </div>
               );
             })}
-          </Row>
+          </div>
         </>
       ),
     },
   ];
-
-  const onChange = (key) => {
-    console.log(key);
-  };
 
   return (
     <Layout>
@@ -395,40 +353,46 @@ export default function Dashboard({ code }) {
             track={track}
             key={track.uri}
             chooseTrack={chooseTrack}
-          />
-        ))} */}
-            {/* {searchResults.length === 0 && (
-          <div className="text-center" style={{ whiteSpace: "pre" }}>
-            {lyrics}
-          </div>
-        )} */}
-            {/* <Row gutter={[12, 12]}> */}
-            {/* {forgottenPlaylists.length ? (
-                forgottenPlaylists.map((playlist) => {
-                  return (
-                    <Col span={6}>
-                      <TrackCollection
-                        title={playlist.name}
-                        tracksToShow={playlist.tracks}
-                        chooseTrack={chooseTrack}
-                      />
-                    </Col>
-                  );
-                })
-              ) : (
-                <></>
-              )} */}
+            
+          />)}*/}
+
+            <Row>
+              <LeftOutlined
+                style={{ fontSize: 40 }}
+                onClick={() => {
+                  console.log("Button clicked");
+                  setActiveKey((state) => {
+                    const currentKey = parseInt(state);
+                    if (currentKey > 1) return (currentKey - 1).toString();
+                  });
+                }}
+              />
+              <RightOutlined
+                style={{ fontSize: 40 }}
+                onClick={() => {
+                  debugger;
+                  console.log("Button clicked");
+                  setActiveKey((state) => {
+                    debugger;
+                    const currentKey = parseInt(state);
+                    if (currentKey < 3) return (currentKey + 1).toString();
+                  });
+                }}
+              />
+            </Row>
             <Tabs
               className="music-tabs"
               defaultActiveKey="1"
+              activeKey={activeKey}
               items={items}
-              onChange={onChange}
+              // onChange={onChange}
             />
+
             {/* </Row> */}
           </div>
-          <div>
+          {/* <div>
             <Player accessToken={accessToken} trackUri={playingTrack?.uri} />
-          </div>
+          </div> */}
           {/* </Container> */}
         </div>
       </Content>
@@ -442,3 +406,32 @@ export default function Dashboard({ code }) {
     </Layout>
   );
 }
+/**
+ *           <Carousel afterChange={onChange}>
+            {groupedArtists?.map((artistGroup) => (
+              <Row gutter={[16, 16]}>
+                {artistGroup.map((artist) => (
+                  <Col span={12} style={{ display: "flex" }}>
+                    <TrackCollection
+                      title={artist.artist.name}
+                      tracksToShow={artist.tracks}
+                      chooseTrack={chooseTrack}
+                    />
+                  </Col>
+                ))}
+              </Row>
+            ))}
+            {/* {artistTracks.map((artist) => {
+              return (
+                <Col span={8}>
+                <div className="item">
+                  <TrackCollection
+                    title={artist.artist.name}
+                    tracksToShow={artist.tracks}
+                    chooseTrack={chooseTrack}
+                  />
+                </div>
+              );
+            })} }
+            </Carousel>
+ */
