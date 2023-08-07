@@ -1,7 +1,16 @@
 import { useState, useEffect } from "react";
 import useAuth from "./useAuth";
 import Player from "./components/Player";
-import { Row, Col, Card, Tabs, Carousel } from "antd";
+import {
+  Row,
+  Col,
+  Card,
+  Tabs,
+  Tooltip,
+  Carousel,
+  Typography,
+  Button,
+} from "antd";
 import TrackSearchResult from "./components/TrackSearchResult";
 import RecentTrack from "./components/RecentTrack";
 import { Container, Form } from "react-bootstrap";
@@ -12,8 +21,10 @@ import BaseLayout from "./components/Layout";
 import StickyBox from "react-sticky-box";
 import { ScrollMenu, VisibilityContext } from "react-horizontal-scrolling-menu";
 import Scroller from "./components/scrolltest";
-
+import "./index.css";
 import HorizontalScroll from "react-horizontal-scrolling";
+
+import { ArrowsAltOutlined, SearchOutlined } from "@ant-design/icons";
 
 import {
   ArrowRightOutlined,
@@ -25,6 +36,8 @@ import {
 
 import React from "react";
 import { Breadcrumb, Layout, Menu, theme } from "antd";
+import TabbedItems from "./components/TabbedItems";
+import TabContent from "./components/TabContent";
 const { Header, Content, Footer } = Layout;
 
 const spotifyApi = new SpotifyWebApi({
@@ -220,26 +233,21 @@ export default function Dashboard({ code }) {
   const items = [
     {
       key: "1",
-      label: `Recommendations`,
       children: (
-        <>
-          <Row gutter={[40, 0]} justify={"center"}>
-            <Col span={8} style={{ margin: "auto 80px" }}>
-              <TrackCollection
-                title={"Some of your most recent songs"}
-                tracksToShow={recentTracks}
-                chooseTrack={chooseTrack}
-              />
-            </Col>
-            <Col span={8} style={{ margin: "auto 80px" }}>
-              <TrackCollection
-                title="Some recommendations based on your recent songs"
-                tracksToShow={recommendedTracks}
-                chooseTrack={chooseTrack}
-              />
-            </Col>
-          </Row>
-        </>
+        <TabContent
+          chooseTrack={chooseTrack}
+          title="Welcome to mixtape central!"
+          contentList={[
+            {
+              label: "Recent Tracks",
+              tracks: recentTracks,
+            },
+            {
+              label: "Some recommendations based on your recent songs",
+              tracks: recommendedTracks,
+            },
+          ]}
+        />
       ),
     },
     {
@@ -248,19 +256,16 @@ export default function Dashboard({ code }) {
       forceRender: true,
       children: (
         <>
-          <div className="scrolling-wrapper">
-            {artistTracks.map((artist) => {
-              return (
-                <div className="card">
-                  <TrackCollection
-                    title={artist.artist.name}
-                    tracksToShow={artist.tracks}
-                    chooseTrack={chooseTrack}
-                  />
-                </div>
-              );
+          <TabContent
+            chooseTrack={chooseTrack}
+            title="Binge on some of your favorite artists"
+            contentList={artistTracks.map((artist) => {
+              return {
+                label: artist.artist.name,
+                tracks: artist.tracks,
+              };
             })}
-          </div>
+          />
         </>
       ),
     },
@@ -270,19 +275,16 @@ export default function Dashboard({ code }) {
       forceRender: true,
       children: (
         <>
-          <div className="scrolling-wrapper">
-            {forgottenPlaylists.map((playlist) => {
-              return (
-                <div className="card">
-                  <TrackCollection
-                    title={playlist.name}
-                    tracksToShow={playlist.tracks}
-                    chooseTrack={chooseTrack}
-                  />
-                </div>
-              );
+          <TabContent
+            chooseTrack={chooseTrack}
+            title="Some music you have moved away from"
+            contentList={forgottenPlaylists.map((playlist) => {
+              return {
+                label: playlist.name,
+                tracks: playlist.tracks,
+              };
             })}
-          </div>
+          />
         </>
       ),
     },
@@ -315,17 +317,9 @@ export default function Dashboard({ code }) {
         className="site-layout"
         style={{
           padding: "0 50px",
+          height: "100vh",
         }}
       >
-        {/* <Breadcrumb
-          style={{
-            margin: "16px 0",
-          }}
-        >
-          <Breadcrumb.Item>Home</Breadcrumb.Item>
-          <Breadcrumb.Item>List</Breadcrumb.Item>
-          <Breadcrumb.Item>App</Breadcrumb.Item>
-        </Breadcrumb> */}
         <div
           style={{
             padding: 24,
@@ -357,38 +351,32 @@ export default function Dashboard({ code }) {
           />)}*/}
 
             <Row>
-              <LeftOutlined
-                style={{ fontSize: 40 }}
+              <Button
+                type="secondary"
+                // style={{ fontSize: 40 }}
                 onClick={() => {
-                  console.log("Button clicked");
                   setActiveKey((state) => {
                     const currentKey = parseInt(state);
                     if (currentKey > 1) return (currentKey - 1).toString();
                   });
                 }}
+                shape="circle"
+                icon={<ArrowLeftOutlined />}
               />
-              <RightOutlined
-                style={{ fontSize: 40 }}
+              <Button
+                type="secondary"
+                // style={{ fontSize: 40 }}
                 onClick={() => {
-                  debugger;
-                  console.log("Button clicked");
                   setActiveKey((state) => {
-                    debugger;
                     const currentKey = parseInt(state);
                     if (currentKey < 3) return (currentKey + 1).toString();
                   });
                 }}
+                shape="circle"
+                icon={<ArrowRightOutlined />}
               />
             </Row>
-            <Tabs
-              className="music-tabs"
-              defaultActiveKey="1"
-              activeKey={activeKey}
-              items={items}
-              // onChange={onChange}
-            />
-
-            {/* </Row> */}
+            <TabbedItems items={items} activeKey={activeKey} />
           </div>
           {/* <div>
             <Player accessToken={accessToken} trackUri={playingTrack?.uri} />
@@ -406,32 +394,3 @@ export default function Dashboard({ code }) {
     </Layout>
   );
 }
-/**
- *           <Carousel afterChange={onChange}>
-            {groupedArtists?.map((artistGroup) => (
-              <Row gutter={[16, 16]}>
-                {artistGroup.map((artist) => (
-                  <Col span={12} style={{ display: "flex" }}>
-                    <TrackCollection
-                      title={artist.artist.name}
-                      tracksToShow={artist.tracks}
-                      chooseTrack={chooseTrack}
-                    />
-                  </Col>
-                ))}
-              </Row>
-            ))}
-            {/* {artistTracks.map((artist) => {
-              return (
-                <Col span={8}>
-                <div className="item">
-                  <TrackCollection
-                    title={artist.artist.name}
-                    tracksToShow={artist.tracks}
-                    chooseTrack={chooseTrack}
-                  />
-                </div>
-              );
-            })} }
-            </Carousel>
- */

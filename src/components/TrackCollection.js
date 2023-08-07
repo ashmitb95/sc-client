@@ -1,7 +1,6 @@
 import React from "react";
 import { Card } from "antd";
 import RecentTrack from "./RecentTrack";
-import "./TrackCard.css";
 export default function TrackCollection({ title, tracksToShow, chooseTrack }) {
   return (
     <Card
@@ -9,8 +8,6 @@ export default function TrackCollection({ title, tracksToShow, chooseTrack }) {
         height: "500px",
         overflow: "hidden",
         border: "none",
-        boxShadow:
-          "rgba(0, 0, 0, 0.16) 0px 10px 36px 0px,rgba(0, 0, 0, 0.06) 0px 0px 0px 1px",
       }}
       className="playlist-card"
     >

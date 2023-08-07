@@ -84,9 +84,9 @@
   white-space: nowrap;
 }
 
-.scrolling-wrapper .card {
+.playlist-card {
   display: inline-block;
-  width: 25%;
+  width: 28%;
   margin: auto 5em;
 }
 
